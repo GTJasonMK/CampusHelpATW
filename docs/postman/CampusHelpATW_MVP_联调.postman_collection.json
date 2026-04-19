@@ -1,0 +1,1217 @@
+{
+  "info": {
+    "name": "CampusHelpATW MVP 联调集合",
+    "_postman_id": "8b9b9f2e-8cdb-4f78-8a72-2c6d8e3a9a01",
+    "description": "基于 docs/API清单.md 与联调数据脚本生成。建议先执行 mysql_schema/mysql_seed/mysql_guards/mysql_mock_data。",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// 统一前置，可按需扩展"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "00-登录与令牌",
+      "item": [
+        {
+          "name": "登录-Alice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"campus_email\": \"{{aliceEmail}}\",\n  \"code\": \"{{verifyCode}}\",\n  \"password\": \"{{devPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/email/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "email",
+                "verify"
+              ]
+            },
+            "description": "登录后将 token 写入 token/aliceToken"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "var res = pm.response.json();",
+                  "var token = (res.data && res.data.token) || res.token || null;",
+                  "if (token) {",
+                  "  pm.collectionVariables.set('token', token);",
+                  "  pm.collectionVariables.set('aliceToken', token);",
+                  "}",
+                  "var userId = (res.data && res.data.user && res.data.user.id) || (res.user && res.user.id);",
+                  "if (userId) { pm.collectionVariables.set('aliceUserId', String(userId)); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "登录-Bob",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"campus_email\": \"{{bobEmail}}\",\n  \"code\": \"{{verifyCode}}\",\n  \"password\": \"{{devPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/email/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "email",
+                "verify"
+              ]
+            },
+            "description": "登录后将 token 写入 token/bobToken"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "var res = pm.response.json();",
+                  "var token = (res.data && res.data.token) || res.token || null;",
+                  "if (token) {",
+                  "  pm.collectionVariables.set('token', token);",
+                  "  pm.collectionVariables.set('bobToken', token);",
+                  "}",
+                  "var userId = (res.data && res.data.user && res.data.user.id) || (res.user && res.user.id);",
+                  "if (userId) { pm.collectionVariables.set('bobUserId', String(userId)); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "登录-Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"campus_email\": \"{{adminEmail}}\",\n  \"code\": \"{{verifyCode}}\",\n  \"password\": \"{{devPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/email/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "email",
+                "verify"
+              ]
+            },
+            "description": "登录后将 token 写入 token/adminToken"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "var res = pm.response.json();",
+                  "var token = (res.data && res.data.token) || res.token || null;",
+                  "if (token) {",
+                  "  pm.collectionVariables.set('token', token);",
+                  "  pm.collectionVariables.set('adminToken', token);",
+                  "}",
+                  "var userId = (res.data && res.data.user && res.data.user.id) || (res.user && res.user.id);",
+                  "if (userId) { pm.collectionVariables.set('adminUserId', String(userId)); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "切换令牌-Alice",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me"
+              ]
+            },
+            "description": "执行前请在 Authorization 中使用 {{aliceToken}}，或先手工 set token=aliceToken"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "01-任务主链路",
+      "item": [
+        {
+          "name": "任务列表-抓取联调任务ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tasks?page=1&page_size=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "var res = pm.response.json();",
+                  "var list = [];",
+                  "if (Array.isArray(res.data)) list = res.data;",
+                  "else if (res.data && Array.isArray(res.data.list)) list = res.data.list;",
+                  "else if (Array.isArray(res.list)) list = res.list;",
+                  "function setByTitle(title, key){",
+                  "  var item = list.find(function(x){ return x && x.title === title; });",
+                  "  if (item && item.id) pm.collectionVariables.set(key, String(item.id));",
+                  "}",
+                  "setByTitle('联调任务-01-待接单', 'task_open_id');",
+                  "setByTitle('联调任务-04-已接单', 'task_accepted_id');",
+                  "setByTitle('联调任务-06-进行中', 'task_in_progress_id');",
+                  "setByTitle('联调任务-08-待确认', 'task_pending_confirm_id');",
+                  "setByTitle('联调任务-09-已完成', 'task_done_id');",
+                  "setByTitle('联调任务-10-申诉中', 'task_disputed_id');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "任务详情",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tasks/{{task_done_id}}?include_unread=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tasks",
+                "{{task_done_id}}"
+              ],
+              "query": [
+                {
+                  "key": "include_unread",
+                  "value": "true"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "任务状态日志",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tasks/{{task_done_id}}/status-logs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tasks",
+                "{{task_done_id}}",
+                "status-logs"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "接单-示例",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tasks/{{task_open_id}}/accept",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tasks",
+                "{{task_open_id}}",
+                "accept"
+              ]
+            },
+            "description": "建议使用 Bob 令牌执行"
+          },
+          "response": []
+        },
+        {
+          "name": "标记进行中-示例",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tasks/{{task_accepted_id}}/start",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tasks",
+                "{{task_accepted_id}}",
+                "start"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "提交完成-示例",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tasks/{{task_in_progress_id}}/submit-completion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tasks",
+                "{{task_in_progress_id}}",
+                "submit-completion"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "确认完成-示例",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tasks/{{task_pending_confirm_id}}/confirm-completion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tasks",
+                "{{task_pending_confirm_id}}",
+                "confirm-completion"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "发起申诉-示例",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"联调示例：履约存在争议\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tasks/{{task_in_progress_id}}/dispute",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tasks",
+                "{{task_in_progress_id}}",
+                "dispute"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02-聊天与评价积分",
+      "item": [
+        {
+          "name": "获取任务聊天会话",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tasks/{{task_in_progress_id}}/chat",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tasks",
+                "{{task_in_progress_id}}",
+                "chat"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var res = pm.response.json();",
+                  "var chatId = (res.data && (res.data.chat_id || res.data.id)) || res.chat_id || res.id;",
+                  "if (chatId) pm.collectionVariables.set('chat_id', String(chatId));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "获取聊天消息",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/chats/{{chat_id}}/messages?cursor=0&page_size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "chats",
+                "{{chat_id}}",
+                "messages"
+              ],
+              "query": [
+                {
+                  "key": "cursor",
+                  "value": "0"
+                },
+                {
+                  "key": "page_size",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var res = pm.response.json();",
+                  "var data = res.data;",
+                  "var list = Array.isArray(data) ? data : (data && data.list) || [];",
+                  "if (Array.isArray(list) && list.length > 0) {",
+                  "  var last = list[list.length - 1];",
+                  "  if (last && last.id) pm.collectionVariables.set(\"latest_message_id\", String(last.id));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "发送聊天消息",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message_type\": \"TEXT\",\n  \"content\": \"联调消息：接口已连通\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/chats/{{chat_id}}/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "chats",
+                "{{chat_id}}",
+                "messages"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "查询我的聊天未读统计",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/chats/unread",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "chats",
+                "unread"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var res = pm.response.json();",
+                  "var data = res.data || {};",
+                  "if (typeof data.total_unread !== \"undefined\") pm.collectionVariables.set(\"chat_unread_total\", String(data.total_unread));",
+                  "var chatId = pm.collectionVariables.get(\"chat_id\");",
+                  "var items = data.items || [];",
+                  "if (chatId && Array.isArray(items)) {",
+                  "  var hit = items.find(function(it){ return String(it.chat_id) === String(chatId); });",
+                  "  if (hit) {",
+                  "    pm.collectionVariables.set(\"chat_unread_count\", String(hit.unread_count || 0));",
+                  "    if (typeof hit.latest_message_id !== \"undefined\") pm.collectionVariables.set(\"latest_message_id\", String(hit.latest_message_id || 0));",
+                  "    if (typeof hit.last_read_message_id !== \"undefined\") pm.collectionVariables.set(\"last_read_message_id\", String(hit.last_read_message_id || 0));",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "标记聊天已读",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/chats/{{chat_id}}/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "chats",
+                "{{chat_id}}",
+                "read"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var res = pm.response.json();",
+                  "var data = res.data || {};",
+                  "if (typeof data.last_read_message_id !== \"undefined\") pm.collectionVariables.set(\"last_read_message_id\", String(data.last_read_message_id));",
+                  "if (typeof data.latest_message_id !== \"undefined\") pm.collectionVariables.set(\"latest_message_id\", String(data.latest_message_id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "查询我的聊天未读统计-已读后",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/chats/unread",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "chats",
+                "unread"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var res = pm.response.json();",
+                  "var data = res.data || {};",
+                  "if (typeof data.total_unread !== \"undefined\") pm.collectionVariables.set(\"chat_unread_total\", String(data.total_unread));",
+                  "var chatId = pm.collectionVariables.get(\"chat_id\");",
+                  "var items = data.items || [];",
+                  "if (chatId && Array.isArray(items)) {",
+                  "  var hit = items.find(function(it){ return String(it.chat_id) === String(chatId); });",
+                  "  if (hit) {",
+                  "    pm.collectionVariables.set(\"chat_unread_count\", String(hit.unread_count || 0));",
+                  "    if (typeof hit.latest_message_id !== \"undefined\") pm.collectionVariables.set(\"latest_message_id\", String(hit.latest_message_id || 0));",
+                  "    if (typeof hit.last_read_message_id !== \"undefined\") pm.collectionVariables.set(\"last_read_message_id\", String(hit.last_read_message_id || 0));",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "提交评价-示例",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reviewee_id\": {{bobUserId}},\n  \"rating\": 5,\n  \"content\": \"联调评价：合作顺畅\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tasks/{{task_done_id}}/reviews",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tasks",
+                "{{task_done_id}}",
+                "reviews"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "查询用户评价",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{aliceUserId}}/reviews?page=1&page_size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{aliceUserId}}",
+                "reviews"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "查询我的积分流水",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/points/ledger?point_type=HELP&page=1&page_size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "points",
+                "ledger"
+              ],
+              "query": [
+                {
+                  "key": "point_type",
+                  "value": "HELP"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03-论坛与举报",
+      "item": [
+        {
+          "name": "帖子列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/posts?page=1&page_size=20&sort=latest",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "posts"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "20"
+                },
+                {
+                  "key": "sort",
+                  "value": "latest"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var res = pm.response.json();",
+                  "var list = [];",
+                  "if (Array.isArray(res.data)) list = res.data;",
+                  "else if (res.data && Array.isArray(res.data.list)) list = res.data.list;",
+                  "else if (Array.isArray(res.list)) list = res.list;",
+                  "var p = list.find(function(x){ return x && x.title === '联调帖-01-求推荐自习室'; }) || list[0];",
+                  "if (p && p.id) pm.collectionVariables.set('post_id', String(p.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "帖子详情",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/posts/{{post_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "posts",
+                "{{post_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "评论帖子",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"联调评论：帖子接口可用\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/posts/{{post_id}}/comments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "posts",
+                "{{post_id}}",
+                "comments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "点赞帖子",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/posts/{{post_id}}/like",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "posts",
+                "{{post_id}}",
+                "like"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "提交举报（任务）",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"target_type\": \"TASK\",\n  \"target_id\": {{task_disputed_id}},\n  \"reason_code\": \"DISPUTE\",\n  \"reason_text\": \"联调举报：履约争议\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reports"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "查询我的举报",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports/mine?page=1&page_size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reports",
+                "mine"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var res = pm.response.json();",
+                  "var list = [];",
+                  "if (Array.isArray(res.data)) list = res.data;",
+                  "else if (res.data && Array.isArray(res.data.list)) list = res.data.list;",
+                  "else if (Array.isArray(res.list)) list = res.list;",
+                  "if (list.length > 0 && list[0].id) pm.collectionVariables.set('report_id', String(list[0].id));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04-管理端",
+      "item": [
+        {
+          "name": "管理端-举报列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/reports?status=PENDING&page=1&page_size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "reports"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "PENDING"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "建议切换到 adminToken 后执行"
+          },
+          "response": []
+        },
+        {
+          "name": "管理端-处理举报",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"RESOLVE\",\n  \"result\": \"联调处理：已核实并归档\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/reports/{{report_id}}/handle",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "reports",
+                "{{report_id}}",
+                "handle"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "管理端-任务仲裁",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"MARK_DONE\",\n  \"reason\": \"联调仲裁：证据充分，判定完成\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/tasks/{{task_disputed_id}}/arbitrate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "tasks",
+                "{{task_disputed_id}}",
+                "arbitrate"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:3000"
+    },
+    {
+      "key": "verifyCode",
+      "value": "123456"
+    },
+    {
+      "key": "devPassword",
+      "value": "ChangeMe123!"
+    },
+    {
+      "key": "aliceEmail",
+      "value": "alice@campus.local"
+    },
+    {
+      "key": "bobEmail",
+      "value": "bob@campus.local"
+    },
+    {
+      "key": "adminEmail",
+      "value": "admin@campus.local"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "aliceToken",
+      "value": ""
+    },
+    {
+      "key": "bobToken",
+      "value": ""
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "aliceUserId",
+      "value": ""
+    },
+    {
+      "key": "bobUserId",
+      "value": ""
+    },
+    {
+      "key": "adminUserId",
+      "value": ""
+    },
+    {
+      "key": "task_open_id",
+      "value": ""
+    },
+    {
+      "key": "task_accepted_id",
+      "value": ""
+    },
+    {
+      "key": "task_in_progress_id",
+      "value": ""
+    },
+    {
+      "key": "task_pending_confirm_id",
+      "value": ""
+    },
+    {
+      "key": "task_done_id",
+      "value": ""
+    },
+    {
+      "key": "task_disputed_id",
+      "value": ""
+    },
+    {
+      "key": "chat_id",
+      "value": ""
+    },
+    {
+      "key": "post_id",
+      "value": ""
+    },
+    {
+      "key": "report_id",
+      "value": ""
+    },
+    {
+      "key": "latest_message_id",
+      "value": ""
+    },
+    {
+      "key": "last_read_message_id",
+      "value": ""
+    },
+    {
+      "key": "chat_unread_total",
+      "value": ""
+    },
+    {
+      "key": "chat_unread_count",
+      "value": ""
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Environment
+backend/.env
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.venv
+CLAUDE.md
+campus_help_atw.dev.db
+"ui\351\243\216\346\240\274.txt"
+.claude
+miniapp-template

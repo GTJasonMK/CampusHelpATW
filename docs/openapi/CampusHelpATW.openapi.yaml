@@ -1,0 +1,1106 @@
+openapi: 3.0.3
+info:
+  title: CampusHelpATW API
+  version: 0.1.0
+  description: |
+    CampusHelpATW 微信小程序后端接口（FastAPI 实现基线）。
+    实时聊天 WebSocket 端点：
+    - `/api/v1/ws/tasks/{task_id}?token={jwt}`
+    全局未读通知 WebSocket 端点：
+    - `/api/v1/ws/me/notifications?token={jwt}`
+    全局通道事件：
+    - `unread_snapshot` / `chat_unread`（聊天未读）
+    - `task_event`（任务关键节点）
+servers:
+  - url: http://127.0.0.1:3000
+    description: Local
+  - url: https://api.example.com
+    description: Production (placeholder)
+tags:
+  - name: system
+  - name: auth
+  - name: me
+  - name: tasks
+  - name: chats
+  - name: posts
+  - name: reports
+  - name: admin
+  - name: meta
+security:
+  - BearerAuth: []
+paths:
+  /healthz:
+    get:
+      tags: [system]
+      security: []
+      summary: 健康检查
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/auth/email/send-code:
+    post:
+      tags: [auth]
+      security: []
+      summary: 发送校园邮箱验证码
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailSendCodeRequest'
+      responses:
+        '200':
+          description: 发送结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/auth/email/verify:
+    post:
+      tags: [auth]
+      security: []
+      summary: 校验验证码并登录
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailVerifyRequest'
+      responses:
+        '200':
+          description: 登录结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/me:
+    get:
+      tags: [me]
+      summary: 获取当前用户信息
+      responses:
+        '200':
+          description: 用户信息
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/me/profile:
+    patch:
+      tags: [me]
+      summary: 更新个人资料
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdateRequest'
+      responses:
+        '200':
+          description: 更新结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/tasks:
+    get:
+      tags: [tasks]
+      summary: 任务列表
+      description: 返回任务列表，并附带 `publisher_user` / `acceptor_user` 简要信息。
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: category
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            default: 20
+        - in: query
+          name: include_unread
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: 列表结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    post:
+      tags: [tasks]
+      summary: 创建任务
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreateRequest'
+      responses:
+        '200':
+          description: 创建结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/tasks/{task_id}:
+    get:
+      tags: [tasks]
+      summary: 任务详情
+      description: 返回任务信息，并附带 `publisher_user` / `acceptor_user` 简要信息。
+      parameters:
+        - in: path
+          name: task_id
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: include_unread
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: 详情结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/tasks/{task_id}/status-logs:
+    get:
+      tags: [tasks]
+      summary: 任务状态日志
+      parameters:
+        - in: path
+          name: task_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 日志列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/tasks/{task_id}/accept:
+    post:
+      tags: [tasks]
+      summary: 接单
+      parameters:
+        - in: path
+          name: task_id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskActionReasonRequest'
+      responses:
+        '200':
+          description: 接单结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/tasks/{task_id}/start:
+    post:
+      tags: [tasks]
+      summary: 标记进行中
+      parameters:
+        - in: path
+          name: task_id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskActionReasonRequest'
+      responses:
+        '200':
+          description: 更新结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/tasks/{task_id}/submit-completion:
+    post:
+      tags: [tasks]
+      summary: 提交完成
+      parameters:
+        - in: path
+          name: task_id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskActionReasonRequest'
+      responses:
+        '200':
+          description: 更新结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/tasks/{task_id}/confirm-completion:
+    post:
+      tags: [tasks]
+      summary: 确认完成
+      parameters:
+        - in: path
+          name: task_id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskActionReasonRequest'
+      responses:
+        '200':
+          description: 更新结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/tasks/{task_id}/dispute:
+    post:
+      tags: [tasks]
+      summary: 发起申诉
+      parameters:
+        - in: path
+          name: task_id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskActionReasonRequest'
+      responses:
+        '200':
+          description: 更新结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/tasks/{task_id}/cancel:
+    post:
+      tags: [tasks]
+      summary: 取消任务
+      parameters:
+        - in: path
+          name: task_id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskActionReasonRequest'
+      responses:
+        '200':
+          description: 更新结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/tasks/{task_id}/reviews:
+    post:
+      tags: [tasks]
+      summary: 提交任务评价
+      parameters:
+        - in: path
+          name: task_id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskReviewRequest'
+      responses:
+        '200':
+          description: 评价结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/users/{user_id}:
+    get:
+      tags: [tasks]
+      summary: 查询用户公开资料
+      description: 返回基础资料、关系状态、评价聚合以及共同数据聚合。
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 用户公开资料
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/users/{user_id}/reviews:
+    get:
+      tags: [tasks]
+      summary: 查询用户评价列表
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            default: 20
+        - in: query
+          name: rating
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 5
+        - in: query
+          name: with_content
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: 评价列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/users/{user_id}/shared/tasks:
+    get:
+      tags: [tasks]
+      summary: 查询共同任务列表
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            default: 20
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum:
+              - OPEN
+              - ACCEPTED
+              - IN_PROGRESS
+              - PENDING_CONFIRM
+              - DONE
+              - CANCELED
+              - DISPUTED
+        - in: query
+          name: sort
+          schema:
+            type: string
+            default: latest
+            enum:
+              - latest
+              - deadline_asc
+              - reward_desc
+      responses:
+        '200':
+          description: 共同任务列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/me/points/ledger:
+    get:
+      tags: [tasks]
+      summary: 查询我的积分流水
+      parameters:
+        - in: query
+          name: point_type
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: 积分流水列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/tasks/{task_id}/chat:
+    get:
+      tags: [chats]
+      summary: 获取任务聊天会话
+      parameters:
+        - in: path
+          name: task_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 会话信息
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/chats/{chat_id}/messages:
+    get:
+      tags: [chats]
+      summary: 获取聊天消息
+      parameters:
+        - in: path
+          name: chat_id
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: cursor
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: 消息列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    post:
+      tags: [chats]
+      summary: 发送聊天消息
+      parameters:
+        - in: path
+          name: chat_id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatMessageCreateRequest'
+      responses:
+        '200':
+          description: 发送结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/me/chats/unread:
+    get:
+      tags: [chats]
+      summary: 查询我的聊天未读统计
+      responses:
+        '200':
+          description: 未读统计
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/chats/{chat_id}/read:
+    post:
+      tags: [chats]
+      summary: 标记聊天已读
+      parameters:
+        - in: path
+          name: chat_id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatReadMarkRequest'
+      responses:
+        '200':
+          description: 标记已读结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/posts:
+    get:
+      tags: [posts]
+      summary: 帖子列表
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: 帖子列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    post:
+      tags: [posts]
+      summary: 发帖
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostCreateRequest'
+      responses:
+        '200':
+          description: 发帖结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/posts/{post_id}:
+    get:
+      tags: [posts]
+      summary: 帖子详情
+      parameters:
+        - in: path
+          name: post_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 帖子详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/posts/{post_id}/comments:
+    post:
+      tags: [posts]
+      summary: 评论帖子
+      parameters:
+        - in: path
+          name: post_id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostCommentCreateRequest'
+      responses:
+        '200':
+          description: 评论结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/posts/{post_id}/like:
+    post:
+      tags: [posts]
+      summary: 点赞帖子
+      parameters:
+        - in: path
+          name: post_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 点赞结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    delete:
+      tags: [posts]
+      summary: 取消点赞
+      parameters:
+        - in: path
+          name: post_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 取消点赞结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/reports:
+    post:
+      tags: [reports]
+      summary: 提交举报
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportCreateRequest'
+      responses:
+        '200':
+          description: 举报结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/reports/mine:
+    get:
+      tags: [reports]
+      summary: 查询我的举报
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: 举报列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/admin/reports:
+    get:
+      tags: [admin]
+      summary: 管理端举报列表
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: 举报列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/admin/reports/{report_id}/handle:
+    post:
+      tags: [admin]
+      summary: 管理端处理举报
+      parameters:
+        - in: path
+          name: report_id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportHandleRequest'
+      responses:
+        '200':
+          description: 处理结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/admin/tasks/{task_id}/arbitrate:
+    post:
+      tags: [admin]
+      summary: 管理端任务仲裁
+      parameters:
+        - in: path
+          name: task_id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminArbitrateRequest'
+      responses:
+        '200':
+          description: 仲裁结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/admin/task-categories:
+    get:
+      tags: [admin]
+      summary: 管理端任务分类列表
+      parameters:
+        - in: query
+          name: is_active
+          schema:
+            type: boolean
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: 分类列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    post:
+      tags: [admin]
+      summary: 管理端创建任务分类
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCategoryCreateRequest'
+      responses:
+        '200':
+          description: 创建结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/admin/task-categories/{category_id}:
+    patch:
+      tags: [admin]
+      summary: 管理端更新任务分类
+      parameters:
+        - in: path
+          name: category_id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCategoryPatchRequest'
+      responses:
+        '200':
+          description: 更新结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/admin/system-configs:
+    get:
+      tags: [admin]
+      summary: 管理端系统配置列表
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: 配置列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/admin/system-configs/{config_key}:
+    put:
+      tags: [admin]
+      summary: 管理端新增或更新系统配置
+      parameters:
+        - in: path
+          name: config_key
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SystemConfigUpsertRequest'
+      responses:
+        '200':
+          description: 更新结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/v1/meta/task-categories:
+    get:
+      tags: [meta]
+      security: []
+      summary: 前端任务分类配置列表
+      responses:
+        '200':
+          description: 分类列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 0
+        message:
+          type: string
+          example: ok
+        data:
+          nullable: true
+      required: [code, message]
+    EmailSendCodeRequest:
+      type: object
+      required: [campus_email]
+      properties:
+        campus_email:
+          type: string
+          format: email
+    EmailVerifyRequest:
+      type: object
+      required: [campus_email, code, password]
+      properties:
+        campus_email:
+          type: string
+          format: email
+        code:
+          type: string
+        password:
+          type: string
+    UserProfileUpdateRequest:
+      type: object
+      properties:
+        nickname:
+          type: string
+        avatar_url:
+          type: string
+        college_name:
+          type: string
+    TaskCreateRequest:
+      type: object
+      required: [title, description, category, deadline_at]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        location_text:
+          type: string
+        reward_amount:
+          type: number
+        reward_type:
+          type: string
+        deadline_at:
+          type: string
+          format: date-time
+    TaskActionReasonRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+    TaskReviewRequest:
+      type: object
+      required: [reviewee_id, rating]
+      properties:
+        reviewee_id:
+          type: integer
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        content:
+          type: string
+    ChatMessageCreateRequest:
+      type: object
+      required: [content]
+      properties:
+        message_type:
+          type: string
+          default: TEXT
+        content:
+          type: string
+    ChatReadMarkRequest:
+      type: object
+      properties:
+        last_read_message_id:
+          type: integer
+          minimum: 0
+    PostCreateRequest:
+      type: object
+      required: [title, content]
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+    PostCommentCreateRequest:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+    ReportCreateRequest:
+      type: object
+      required: [target_type, target_id, reason_code]
+      properties:
+        target_type:
+          type: string
+        target_id:
+          type: integer
+        reason_code:
+          type: string
+        reason_text:
+          type: string
+    ReportHandleRequest:
+      type: object
+      required: [action, result]
+      properties:
+        action:
+          type: string
+        result:
+          type: string
+    TaskCategoryCreateRequest:
+      type: object
+      required: [code, name]
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        sort_order:
+          type: integer
+          default: 0
+        is_active:
+          type: boolean
+          default: true
+    TaskCategoryPatchRequest:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        sort_order:
+          type: integer
+        is_active:
+          type: boolean
+    SystemConfigUpsertRequest:
+      type: object
+      required: [config_value]
+      properties:
+        config_value:
+          description: 任意 JSON 值
+        description:
+          type: string
+    AdminArbitrateRequest:
+      type: object
+      required: [decision, reason]
+      properties:
+        decision:
+          type: string
+        reason:
+          type: string
